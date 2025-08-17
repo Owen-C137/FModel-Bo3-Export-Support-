@@ -31,7 +31,6 @@ using CUE4Parse.UE4.Localization;
 using CUE4Parse.UE4.Objects.Core.Serialization;
 using CUE4Parse.UE4.Objects.Engine;
 using CUE4Parse.UE4.Oodle.Objects;
-using CUE4Parse.UE4.Pak;
 using CUE4Parse.UE4.Readers;
 using CUE4Parse.UE4.Shaders;
 using CUE4Parse.UE4.Versions;
@@ -63,6 +62,8 @@ using SkiaSharp;
 using UE4Config.Parsing;
 using Application = System.Windows.Application;
 using FGuid = CUE4Parse.UE4.Objects.Core.Misc.FGuid;
+using CUE4Parse.UE4.Objects.UObject.Editor;
+
 
 namespace FModel.ViewModels;
 
@@ -361,7 +362,7 @@ public class CUE4ParseViewModel : ViewModel
             {
                 var mappingsFolder = Path.Combine(UserSettings.Default.OutputDirectory, ".data");
                 if (endpoint.Path == "$.[?(@.meta.compressionMethod=='Oodle')].['url','fileName']") endpoint.Path = "$.[0].['url','fileName']";
-                var mappings = _apiEndpointView.DynamicApi.GetMappings(default, endpoint.Url, endpoint.Path);
+                var mappings = _apiEndpointView.DynamicApi.GetMappings(CancellationToken.None, endpoint.Url, endpoint.Path);
                 if (mappings is { Length: > 0 })
                 {
                     foreach (var mapping in mappings)
@@ -436,7 +437,7 @@ public class CUE4ParseViewModel : ViewModel
             var ioStoreOnDemandPath = Path.Combine(UserSettings.Default.GameDirectory, "..\\..\\..\\Cloud", inst[0].Value.SubstringAfterLast("/").SubstringBefore("\""));
             if (!File.Exists(ioStoreOnDemandPath)) return;
 
-            await _apiEndpointView.EpicApi.VerifyAuth(default);
+            await _apiEndpointView.EpicApi.VerifyAuth(CancellationToken.None);
             await Provider.RegisterVfs(new IoChunkToc(ioStoreOnDemandPath), new IoStoreOnDemandOptions
             {
                 ChunkBaseUri = new Uri("https://download.epicgames.com/ias/fortnite/", UriKind.Absolute),
@@ -453,6 +454,7 @@ public class CUE4ParseViewModel : ViewModel
     public int LocalizedResourcesCount { get; set; }
     public bool LocalResourcesDone { get; set; }
     public bool HotfixedResourcesDone { get; set; }
+
     public async Task LoadLocalizedResources()
     {
         var snapshot = LocalizedResourcesCount;
@@ -466,6 +468,7 @@ public class CUE4ParseViewModel : ViewModel
             Utils.Typefaces = new Typefaces(this);
         }
     }
+
     private Task LoadGameLocalizedResources()
     {
         if (LocalResourcesDone) return Task.CompletedTask;
@@ -474,12 +477,13 @@ public class CUE4ParseViewModel : ViewModel
             LocalResourcesDone = Provider.TryChangeCulture(Provider.GetLanguageCode(UserSettings.Default.AssetLanguage));
         });
     }
+
     private Task LoadHotfixedLocalizedResources()
     {
         if (!Provider.ProjectName.Equals("fortnitegame", StringComparison.OrdinalIgnoreCase) || HotfixedResourcesDone) return Task.CompletedTask;
         return Task.Run(() =>
         {
-            var hotfixes = ApplicationService.ApiEndpointView.CentralApi.GetHotfixes(default, Provider.GetLanguageCode(UserSettings.Default.AssetLanguage));
+            var hotfixes = ApplicationService.ApiEndpointView.CentralApi.GetHotfixes(CancellationToken.None, Provider.GetLanguageCode(UserSettings.Default.AssetLanguage));
             if (hotfixes == null) return;
 
             Provider.Internationalization.Override(hotfixes);
@@ -606,17 +610,30 @@ public class CUE4ParseViewModel : ViewModel
                 break;
             }
             case "upluginmanifest":
+            case "code-workspace":
+            case "projectstore":
+            case "uefnproject":
             case "uproject":
             case "manifest":
             case "uplugin":
             case "archive":
             case "dnearchive": // Banishers: Ghosts of New Eden
+            case "gitignore":
+            case "LICENSE":
+            case "template":
             case "stUMeta": // LIS: Double Exposure
             case "vmodule":
+            case "glslfx":
+            case "cptake":
             case "uparam": // Steel Hunters
+            case "spi1d":
             case "verse":
             case "html":
             case "json":
+            case "uref":
+            case "cube":
+            case "usda":
+            case "ocio":
             case "ini":
             case "txt":
             case "log":
@@ -634,9 +651,15 @@ public class CUE4ParseViewModel : ViewModel
             case "pem":
             case "tps":
             case "tgc": // State of Decay 2
+            case "cpp":
+            case "apx":
+            case "udn":
+            case "doc":
             case "lua":
+            case "vdf":
             case "js":
             case "po":
+            case "md":
             case "h":
             {
                 var data = Provider.SaveAsset(entry);
@@ -695,8 +718,13 @@ public class CUE4ParseViewModel : ViewModel
                 break;
             }
             case "xvag":
+            case "flac":
             case "at9":
             case "wem":
+            case "wav":
+            case "WAV":
+            case "ogg":
+                // todo: CSCore.MediaFoundation.MediaFoundationException The byte stream type of the given URL is unsupported. case "aif":
             {
                 var data = Provider.SaveAsset(entry);
                 SaveAndPlaySound(entry.PathWithoutExtension, entry.Extension, data);
@@ -762,6 +790,14 @@ public class CUE4ParseViewModel : ViewModel
 
                 break;
             }
+            case "stinfo":
+            {
+                var archive = entry.CreateReader();
+                var ar = new FShaderTypeHashes(archive);
+                TabControl.SelectedTab.SetDocumentText(JsonConvert.SerializeObject(ar, Formatting.Indented), saveProperties, updateUi);
+
+                break;
+            }
             case "res": // just skip
             case "luac": // compiled lua
             case "bytes": // wuthering waves
@@ -796,7 +832,7 @@ public class CUE4ParseViewModel : ViewModel
         }
     }
 
-    private bool CheckExport(CancellationToken cancellationToken, IPackage pkg, int index, EBulkType bulk = EBulkType.None) // return true once you wanna stop searching for exports
+    private bool CheckExport(CancellationToken cancellationToken, IPackage pkg, int index, EBulkType bulk = EBulkType.None) // return true once you want to stop searching for exports
     {
         var isNone = bulk == EBulkType.None;
         var updateUi = !HasFlag(bulk, EBulkType.Auto);
@@ -966,6 +1002,51 @@ public class CUE4ParseViewModel : ViewModel
         TabControl.SelectedTab.Highlighter = AvalonExtensions.HighlighterSelector("");
 
         TabControl.SelectedTab.SetDocumentText(JsonConvert.SerializeObject(package, Formatting.Indented), false, false);
+    }
+
+    public void Decompile(GameFile entry)
+    {
+        if (TabControl.CanAddTabs) TabControl.AddTab(entry);
+        else TabControl.SelectedTab.SoftReset(entry);
+
+        TabControl.SelectedTab.TitleExtra = "Decompiled";
+        TabControl.SelectedTab.Highlighter = AvalonExtensions.HighlighterSelector("cpp");
+
+        UClassCookedMetaData cookedMetaData = null;
+        try
+        {
+            var editorPkg = Provider.LoadPackage(entry.Path.Replace(".uasset", ".o.uasset"));
+            cookedMetaData = editorPkg.GetExport<UClassCookedMetaData>("CookedClassMetaData");
+        }
+        catch
+        {
+            // ignored
+        }
+
+        var cppList = new List<string>();
+        var pkg = Provider.LoadPackage(entry);
+        for (var i = 0; i < pkg.ExportMapLength; i++)
+        {
+            var pointer = new FPackageIndex(pkg, i + 1).ResolvedObject;
+            if (pointer?.Object is null && pointer.Class?.Object?.Value is null)
+                continue;
+
+            var dummy = ((AbstractUePackage) pkg).ConstructObject(pointer.Class?.Object?.Value as UStruct, pkg);
+            if (dummy is not UClass || pointer.Object.Value is not UClass blueprint)
+                continue;
+
+            cppList.Add(blueprint.DecompileBlueprintToPseudo(cookedMetaData));
+        }
+
+        var cpp = cppList.Count > 1 ? string.Join("\n\n", cppList) : cppList.FirstOrDefault() ?? string.Empty;
+        if (entry.Path.Contains("_Verse.uasset"))
+        {
+            cpp = Regex.Replace(cpp, "__verse_0x[a-fA-F0-9]{8}_", ""); // UnmangleCasedName
+        }
+        cpp = Regex.Replace(cpp, @"CallFunc_([A-Za-z0-9_]+)_ReturnValue", "$1");
+
+
+        TabControl.SelectedTab.SetDocumentText(cpp, false, false);
     }
 
     private void SaveAndPlaySound(string fullPath, string ext, byte[] data)
