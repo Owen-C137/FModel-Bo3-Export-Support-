@@ -370,7 +370,7 @@ public class CUE4ParseViewModel : ViewModel
                 if (endpoint.Url == "https://fortnitecentral.genxgames.gg/api/v1/mappings")
                 {
                     endpoint.Url = "https://uedb.dev/svc/api/v1/fortnite/mappings";
-                    endpoint.Path = "$.mappings.Brotli";
+                    endpoint.Path = "$.mappings.ZStandard";
                 }
 
                 var mappingsFolder = Path.Combine(UserSettings.Default.OutputDirectory, ".data");

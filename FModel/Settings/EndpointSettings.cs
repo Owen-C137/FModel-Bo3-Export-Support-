@@ -17,7 +17,7 @@ public class EndpointSettings : ViewModel
                 return new EndpointSettings[]
                 {
                     new("https://uedb.dev/svc/api/v1/fortnite/aes", "$.['mainKey','dynamicKeys']"),
-                    new("https://uedb.dev/svc/api/v1/fortnite/mappings", "$.mappings.Brotli")
+                    new("https://uedb.dev/svc/api/v1/fortnite/mappings", "$.mappings.ZStandard")
                 };
             default:
                 return new EndpointSettings[] { new(), new() };
