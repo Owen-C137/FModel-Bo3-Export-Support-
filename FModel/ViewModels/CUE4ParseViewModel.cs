@@ -64,6 +64,8 @@ using UE4Config.Parsing;
 using Application = System.Windows.Application;
 using FGuid = CUE4Parse.UE4.Objects.Core.Misc.FGuid;
 using CUE4Parse.UE4.Objects.UObject.Editor;
+using CUE4Parse.UE4.Assets.Exports.Fmod;
+using CUE4Parse.UE4.FMod;
 
 
 namespace FModel.ViewModels;
@@ -130,6 +132,8 @@ public class CUE4ParseViewModel : ViewModel
     public ConfigIni IoStoreOnDemand { get; }
     private Lazy<WwiseProvider> _wwiseProviderLazy;
     public WwiseProvider WwiseProvider => _wwiseProviderLazy.Value;
+    private Lazy<FModProvider> _fmodProviderLazy;
+    public FModProvider FmodProvider => _fmodProviderLazy?.Value;
     public ConcurrentBag<string> UnknownExtensions = [];
 
     public CUE4ParseViewModel()
@@ -283,6 +287,7 @@ public class CUE4ParseViewModel : ViewModel
 
             Provider.Initialize();
             _wwiseProviderLazy = new Lazy<WwiseProvider>(() => new WwiseProvider(Provider, UserSettings.Default.WwiseMaxBnkPrefetch));
+            _fmodProviderLazy = new Lazy<FModProvider>(() => new FModProvider(Provider, UserSettings.Default.GameDirectory));
             Log.Information($"{Provider.Versions.Game} ({Provider.Versions.Platform}) | Archives: x{Provider.UnloadedVfs.Count} | AES: x{Provider.RequiredKeys.Count} | Loose Files: x{Provider.Files.Count}");
         });
     }
@@ -939,6 +944,26 @@ public class CUE4ParseViewModel : ViewModel
                 foreach (var sound in extractedSounds)
                 {
                     SaveAndPlaySound(sound.OutputPath, sound.Extension, sound.Data);
+                }
+                return false;
+            }
+            case UFMODEvent when isNone && pointer.Object.Value is UFMODEvent fmodEvent:
+            {
+                var extractedSounds = FmodProvider.ExtractEventSounds(fmodEvent);
+                var directory = Path.GetDirectoryName(fmodEvent.Owner?.Name) ?? "/FMOD/Desktop/";
+                foreach (var sound in extractedSounds)
+                {
+                    SaveAndPlaySound(Path.Combine(directory, sound.Name), sound.Extension, sound.Data);
+                }
+                return false;
+            }
+            case UFMODBank when isNone && pointer.Object.Value is UFMODBank fmodBank:
+            {
+                var extractedSounds = FmodProvider.ExtractBankSounds(fmodBank);
+                var directory = Path.GetDirectoryName(fmodBank.Owner?.Name) ?? "/FMOD/Desktop/";
+                foreach (var sound in extractedSounds)
+                {
+                    SaveAndPlaySound(Path.Combine(directory, sound.Name), sound.Extension, sound.Data);
                 }
                 return false;
             }
