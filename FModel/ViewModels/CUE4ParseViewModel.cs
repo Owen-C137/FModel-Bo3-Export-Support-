@@ -583,6 +583,9 @@ public class CUE4ParseViewModel : ViewModel
     public void AnimationFolder(CancellationToken cancellationToken, TreeItem folder)
         => BulkFolder(cancellationToken, folder, asset => Extract(cancellationToken, asset, TabControl.HasNoTabs, EBulkType.Animations | EBulkType.Auto));
 
+    public void AudioFolder(CancellationToken cancellationToken, TreeItem folder)
+        => BulkFolder(cancellationToken, folder, asset => Extract(cancellationToken, asset, TabControl.HasNoTabs, EBulkType.Audio | EBulkType.Auto));
+
     public void Extract(CancellationToken cancellationToken, GameFile entry, bool addNewTab = false, EBulkType bulk = EBulkType.None)
     {
         Log.Information("User DOUBLE-CLICKED to extract '{FullPath}'", entry.Path);
@@ -594,6 +597,7 @@ public class CUE4ParseViewModel : ViewModel
         var updateUi = !HasFlag(bulk, EBulkType.Auto);
         var saveProperties = HasFlag(bulk, EBulkType.Properties);
         var saveTextures = HasFlag(bulk, EBulkType.Textures);
+        var saveAudio = HasFlag(bulk, EBulkType.Audio);
         switch (entry.Extension)
         {
             case "uasset":
@@ -738,7 +742,7 @@ public class CUE4ParseViewModel : ViewModel
                 var medias = WwiseProvider.ExtractBankSounds(wwise);
                 foreach (var media in medias)
                 {
-                    SaveAndPlaySound(media.OutputPath, media.Extension, media.Data);
+                    SaveAndPlaySound(media.OutputPath, media.Extension, media.Data, saveAudio);
                 }
 
                 break;
@@ -753,7 +757,7 @@ public class CUE4ParseViewModel : ViewModel
                 // todo: CSCore.MediaFoundation.MediaFoundationException The byte stream type of the given URL is unsupported. case "aif":
             {
                 var data = Provider.SaveAsset(entry);
-                SaveAndPlaySound(entry.PathWithoutExtension, entry.Extension, data);
+                SaveAndPlaySound(entry.PathWithoutExtension, entry.Extension, data, saveAudio);
 
                 break;
             }
@@ -868,6 +872,7 @@ public class CUE4ParseViewModel : ViewModel
         var isNone = bulk == EBulkType.None;
         var updateUi = !HasFlag(bulk, EBulkType.Auto);
         var saveTextures = HasFlag(bulk, EBulkType.Textures);
+        var saveAudio = HasFlag(bulk, EBulkType.Audio);
 
         var pointer = new FPackageIndex(pkg, index + 1).ResolvedObject;
         if (pointer?.Object is null) return false;
@@ -938,37 +943,37 @@ public class CUE4ParseViewModel : ViewModel
                 TabControl.SelectedTab.AddImage(sourceFile.SubstringAfterLast('/'), false, bitmap, false, updateUi);
                 return false;
             }
-            case UAkAudioEvent when isNone && pointer.Object.Value is UAkAudioEvent audioEvent:
+            case UAkAudioEvent when (isNone || saveAudio) && pointer.Object.Value is UAkAudioEvent audioEvent:
             {
                 var extractedSounds = WwiseProvider.ExtractAudioEventSounds(audioEvent);
                 foreach (var sound in extractedSounds)
                 {
-                    SaveAndPlaySound(sound.OutputPath, sound.Extension, sound.Data);
+                    SaveAndPlaySound(sound.OutputPath, sound.Extension, sound.Data, saveAudio);
                 }
                 return false;
             }
-            case UFMODEvent when isNone && pointer.Object.Value is UFMODEvent fmodEvent:
+            case UFMODEvent when (isNone || saveAudio) && pointer.Object.Value is UFMODEvent fmodEvent:
             {
                 var extractedSounds = FmodProvider.ExtractEventSounds(fmodEvent);
                 var directory = Path.GetDirectoryName(fmodEvent.Owner?.Name) ?? "/FMOD/Desktop/";
                 foreach (var sound in extractedSounds)
                 {
-                    SaveAndPlaySound(Path.Combine(directory, sound.Name), sound.Extension, sound.Data);
+                    SaveAndPlaySound(Path.Combine(directory, sound.Name), sound.Extension, sound.Data, saveAudio);
                 }
                 return false;
             }
-            case UFMODBank when isNone && pointer.Object.Value is UFMODBank fmodBank:
+            case UFMODBank when (isNone || saveAudio) && pointer.Object.Value is UFMODBank fmodBank:
             {
                 var extractedSounds = FmodProvider.ExtractBankSounds(fmodBank);
                 var directory = Path.GetDirectoryName(fmodBank.Owner?.Name) ?? "/FMOD/Desktop/";
                 foreach (var sound in extractedSounds)
                 {
-                    SaveAndPlaySound(Path.Combine(directory, sound.Name), sound.Extension, sound.Data);
+                    SaveAndPlaySound(Path.Combine(directory, sound.Name), sound.Extension, sound.Data, saveAudio);
                 }
                 return false;
             }
-            case UAkMediaAssetData when isNone:
-            case USoundWave when isNone:
+            case UAkMediaAssetData when isNone || saveAudio:
+            case USoundWave when isNone || saveAudio:
             {
                 var shouldDecompress = UserSettings.Default.CompressedAudioMode == ECompressedAudio.PlayDecompressed;
                 pointer.Object.Value.Decode(shouldDecompress, out var audioFormat, out var data);
@@ -979,7 +984,7 @@ public class CUE4ParseViewModel : ViewModel
                     return false;
                 }
 
-                SaveAndPlaySound(TabControl.SelectedTab.Entry.PathWithoutExtension.Replace('\\', '/'), audioFormat, data);
+                SaveAndPlaySound(TabControl.SelectedTab.Entry.PathWithoutExtension.Replace('\\', '/'), audioFormat, data, saveAudio);
                 return false;
             }
             case UWorld when isNone && UserSettings.Default.PreviewWorlds:
@@ -1100,13 +1105,13 @@ public class CUE4ParseViewModel : ViewModel
         TabControl.SelectedTab.SetDocumentText(cpp, false, false);
     }
 
-    private void SaveAndPlaySound(string fullPath, string ext, byte[] data)
+    private void SaveAndPlaySound(string fullPath, string ext, byte[] data, bool isBulk)
     {
         if (fullPath.StartsWith('/')) fullPath = fullPath[1..];
         var savedAudioPath = Path.Combine(UserSettings.Default.AudioDirectory,
             UserSettings.Default.KeepDirectoryStructure ? fullPath : fullPath.SubstringAfterLast('/')).Replace('\\', '/') + $".{ext.ToLowerInvariant()}";
 
-        if (!UserSettings.Default.IsAutoOpenSounds)
+        if (!UserSettings.Default.IsAutoOpenSounds || isBulk)
         {
             Directory.CreateDirectory(savedAudioPath.SubstringBeforeLast('/'));
             using var stream = new FileStream(savedAudioPath, FileMode.Create, FileAccess.Write);
