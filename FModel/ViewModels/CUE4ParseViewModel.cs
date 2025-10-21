@@ -1111,7 +1111,7 @@ public class CUE4ParseViewModel : ViewModel
         var savedAudioPath = Path.Combine(UserSettings.Default.AudioDirectory,
             UserSettings.Default.KeepDirectoryStructure ? fullPath : fullPath.SubstringAfterLast('/')).Replace('\\', '/') + $".{ext.ToLowerInvariant()}";
 
-        if (!UserSettings.Default.IsAutoOpenSounds || isBulk)
+        if (isBulk)
         {
             Directory.CreateDirectory(savedAudioPath.SubstringBeforeLast('/'));
             using var stream = new FileStream(savedAudioPath, FileMode.Create, FileAccess.Write);

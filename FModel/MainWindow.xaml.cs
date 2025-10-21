@@ -246,7 +246,7 @@ public partial class MainWindow
             FLogger.Append(ELog.Information, () =>
             {
                 FLogger.Text("Successfully saved audio from ", Constants.WHITE);
-                FLogger.Link(folder.PathAtThisPoint, UserSettings.Default.ModelDirectory, true);
+                FLogger.Link(folder.PathAtThisPoint, UserSettings.Default.AudioDirectory, true);
             });
         }
     }

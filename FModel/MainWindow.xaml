@@ -103,9 +103,6 @@
                         </Viewbox>
                     </MenuItem.Icon>
                 </MenuItem>
-                <Separator />
-                <MenuItem Header="Auto Open Sounds" IsCheckable="True" StaysOpenOnClick="True"
-                          IsChecked="{Binding IsAutoOpenSounds, Source={x:Static settings:UserSettings.Default}}" />
             </MenuItem>
             <MenuItem Header="Views">
                 <MenuItem Header="3D Viewer" Command="{Binding MenuCommand}" CommandParameter="Views_3dViewer">
@@ -860,19 +857,6 @@
                                 <Path Fill="{DynamicResource {x:Static adonisUi:Brushes.AccentForegroundBrush}}" Data="{StaticResource StatusBarIcon}" />
                             </Canvas>
                         </Viewbox>
-                    </StatusBarItem>
-
-                    <StatusBarItem Width="30" HorizontalContentAlignment="Stretch" ToolTip="Auto Open Sounds Enabled">
-                        <StatusBarItem.Style>
-                            <Style TargetType="StatusBarItem">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsAutoOpenSounds, Source={x:Static settings:UserSettings.Default}}" Value="False">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </StatusBarItem.Style>
-                        <TextBlock HorizontalAlignment="Center" FontWeight="SemiBold" Text="SND" />
                     </StatusBarItem>
 
                     <StatusBarItem Margin="10 0 0 0">
