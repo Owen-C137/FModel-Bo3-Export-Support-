@@ -652,6 +652,7 @@ public class CUE4ParseViewModel : ViewModel
             case "cube":
             case "usda":
             case "ocio":
+            case "data" when Provider.ProjectName is "OakGame":
             case "ini":
             case "txt":
             case "log":
@@ -675,6 +676,7 @@ public class CUE4ParseViewModel : ViewModel
             case "doc":
             case "lua":
             case "vdf":
+            case "yml":
             case "js":
             case "po":
             case "md":
