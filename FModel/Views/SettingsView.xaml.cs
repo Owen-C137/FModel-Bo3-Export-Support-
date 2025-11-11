@@ -101,6 +101,21 @@ public partial class SettingsView
         if (TryBrowse(out var path)) UserSettings.Default.ModelDirectory = path;
     }
 
+    private void OnBrowseExport2Bin(object sender, RoutedEventArgs e)
+    {
+        var openFileDialog = new OpenFileDialog
+        {
+            Title = "Select export2bin.exe",
+            InitialDirectory = Path.Combine(UserSettings.Default.OutputDirectory),
+            Filter = "Executable Files (*.exe)|*.exe|All Files (*.*)|*.*"
+        };
+
+        if (!openFileDialog.ShowDialog().GetValueOrDefault())
+            return;
+
+        UserSettings.Default.Export2BinPath = openFileDialog.FileName;
+    }
+
     private void OnBrowseMappings(object sender, RoutedEventArgs e)
     {
         var openFileDialog = new OpenFileDialog

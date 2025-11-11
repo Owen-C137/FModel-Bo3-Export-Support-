@@ -65,6 +65,7 @@ namespace FModel.Settings
             AnimFormat = Default.MeshExportFormat switch
             {
                 EMeshFormat.UEFormat => EAnimFormat.UEFormat,
+                EMeshFormat.XModel => EAnimFormat.XAnim,
                 _ => EAnimFormat.ActorX
             },
             MaterialFormat = Default.MaterialExportFormat,
@@ -74,7 +75,8 @@ namespace FModel.Settings
             Platform = Default.CurrentDir.TexturePlatform,
             ExportMorphTargets = Default.SaveMorphTargets,
             ExportMaterials = Default.SaveEmbeddedMaterials,
-            ExportHdrTexturesAsHdr = Default.SaveHdrTexturesAsHdr
+            ExportHdrTexturesAsHdr = Default.SaveHdrTexturesAsHdr,
+            Export2BinPath = Default.Export2BinPath
         };
 
         private bool _showChangelog = true;
@@ -124,6 +126,13 @@ namespace FModel.Settings
         {
             get => _modelDirectory;
             set => SetProperty(ref _modelDirectory, value);
+        }
+
+        private string _export2BinPath;
+        public string Export2BinPath
+        {
+            get => _export2BinPath;
+            set => SetProperty(ref _export2BinPath, value);
         }
 
         private string _gameDirectory = string.Empty;

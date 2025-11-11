@@ -10,9 +10,10 @@ namespace FModel;
 public static class Constants
 {
     public static readonly string APP_PATH = Path.GetFullPath(Environment.GetCommandLineArgs()[0]);
-    public static readonly string APP_VERSION = FileVersionInfo.GetVersionInfo(APP_PATH).FileVersion;
-    public static readonly string APP_COMMIT_ID = FileVersionInfo.GetVersionInfo(APP_PATH).ProductVersion?.SubstringAfter('+');
-    public static readonly string APP_SHORT_COMMIT_ID = APP_COMMIT_ID[..7];
+    private static readonly string _productVersion = FileVersionInfo.GetVersionInfo(APP_PATH).ProductVersion;
+    public static readonly string APP_VERSION = _productVersion?.SubstringBefore('+') ?? FileVersionInfo.GetVersionInfo(APP_PATH).FileVersion;
+    public static readonly string APP_COMMIT_ID = _productVersion?.SubstringAfter('+');
+    public static readonly string APP_SHORT_COMMIT_ID = APP_COMMIT_ID?[..7] ?? "unknown";
 
     public const string ZERO_64_CHAR = "0000000000000000000000000000000000000000000000000000000000000000";
     public static readonly FGuid ZERO_GUID = new(0U);

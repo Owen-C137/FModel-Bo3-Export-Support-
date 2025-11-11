@@ -343,8 +343,13 @@
                     <TextBox Grid.Row="0" Grid.Column="2" IsReadOnly="True" Text="{Binding ModelDirectory, Source={x:Static local:Settings.UserSettings.Default}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0 0 0 5" />
                     <Button Grid.Row="0" Grid.Column="4" Content="..." HorizontalAlignment="Right" Click="OnBrowseModels" Margin="0 0 0 5" />
 
-                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Mesh Format" VerticalAlignment="Center" Margin="0 0 0 5"/>
-                    <ComboBox Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="3" ItemsSource="{Binding SettingsView.MeshExportFormats}" SelectedItem="{Binding SettingsView.SelectedMeshExportFormat, Mode=TwoWay}"
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Export2Bin Path (Optional)" VerticalAlignment="Center" Margin="0 0 0 5"
+                               ToolTip="Path to export2bin.exe (from Call of Duty) for auto-converting XModel/XAnim files to binary format" />
+                    <TextBox Grid.Row="1" Grid.Column="2" IsReadOnly="True" Text="{Binding Export2BinPath, Source={x:Static local:Settings.UserSettings.Default}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0 0 0 5" />
+                    <Button Grid.Row="1" Grid.Column="4" Content="..." HorizontalAlignment="Right" Click="OnBrowseExport2Bin" Margin="0 0 0 5" />
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Mesh Format" VerticalAlignment="Center" Margin="0 0 0 5"/>
+                    <ComboBox Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="3" ItemsSource="{Binding SettingsView.MeshExportFormats}" SelectedItem="{Binding SettingsView.SelectedMeshExportFormat, Mode=TwoWay}"
                               DataContext="{Binding DataContext, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:Views.SettingsView}}}" Margin="0 0 0 5">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
@@ -353,7 +358,7 @@
                         </ComboBox.ItemTemplate>
                     </ComboBox>
 
-                    <ContentControl Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="3" FontSize="10" Margin="0 0 0 5">
+                    <ContentControl Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="3" FontSize="10" Margin="0 0 0 5">
                         <ContentControl.Style>
                             <Style TargetType="{x:Type ContentControl}">
                                 <Setter Property="Visibility" Value="Collapsed" />

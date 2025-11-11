@@ -106,6 +106,13 @@ public class FModelApiEndpoint : AbstractApiProvider
 
     public void CheckForUpdates(bool launch = false)
     {
+        // Disable update checks for custom XMODEL build
+        if (Constants.APP_VERSION.Contains("XMODEL"))
+        {
+            Log.Information("Update check skipped for custom XMODEL build v{Version}", Constants.APP_VERSION);
+            return;
+        }
+
         if (DateTime.Now < UserSettings.Default.NextUpdateCheck)
         {
             Log.Warning("Updates have been silenced until {DateTime}", UserSettings.Default.NextUpdateCheck);
